@@ -4,6 +4,8 @@
   "description": "",
   "main": "database.js",
   "scripts": {
+    "dev": "nodemon server.js",
+    "sync": "node sync-database.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
