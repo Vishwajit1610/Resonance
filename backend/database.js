@@ -32,6 +32,7 @@ function initializeTables() {
     CREATE TABLE IF NOT EXISTS albums (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
+      barcode TEXT,
       artist_id INTEGER,
       FOREIGN KEY (artist_id) REFERENCES artists (id) ON DELETE CASCADE
     );
@@ -43,6 +44,7 @@ function initializeTables() {
       title TEXT NOT NULL,
       track_number INTEGER,
       file_path TEXT UNIQUE NOT NULL,
+      isrc TEXT,
       album_id INTEGER,
       FOREIGN KEY (album_id) REFERENCES albums (id) ON DELETE CASCADE
     );

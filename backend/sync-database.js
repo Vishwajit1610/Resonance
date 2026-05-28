@@ -20,10 +20,20 @@ async function processFile(filePath) {
     const meta = await parseFile(filePath);
 
     // Fallback: If a file has missing data, don't crash, use 'Unknown'
-    const artistName = meta.common.artist || 'Unknown Artist';
-    const albumTitle = meta.common.album || 'Unknown Album';
     const trackTitle = meta.common.title || 'Unknown Track';
+    const albumTitle = meta.common.album || 'Unknown Album';
     const trackNumber = meta.common.track.no || 0;
+
+    // The specific identifiers
+    const barcode = meta.common.barcode || null;
+    const isrc = meta.common.isrc || null;
+
+    // The artist strings needed for fallback
+    const albumArtist = meta.common.albumartist || null;
+    const trackArtist = meta.common.artist || null;
+
+    // We determine the primary artist name for this specific file
+    const artistName = albumArtist || trackArtist;
 
     // 2. Artist Logic
     let artist = await dbGet('SELECT id FROM artists WHERE name = ?', [artistName]);
@@ -37,28 +47,46 @@ async function processFile(filePath) {
     }
 
     // 3. Album Logic
-    let album = await dbGet('SELECT id FROM albums WHERE title = ? AND artist_id = ?', [albumTitle, artistId]);
     let albumId;
-    if (!album) {
-      // Album doesn't exist, so insert it.
-      albumId = await dbRun('INSERT INTO albums (title, artist_id) VALUES (?, ?)', [albumTitle, artistId]);
+    
+    if (barcode) {
+      // Barcode matching
+      let album = await dbGet('SELECT id FROM albums WHERE barcode = ?', [barcode]);
+      if (!album) {
+        albumId = await dbRun('INSERT INTO albums (title, barcode, artist_id) VALUES (?, ?, ?)', [albumTitle, barcode, artistId]); 
+      } else {
+        albumId = album.id;
+      }
     } else {
-      // Album exists, so grab it's ID.
-      albumId = album.id;
+      // Fallback (Title + Resolved Artist)
+      // Since we've set up `artistName = albumArtist || trackArtist` above, 
+      // artistId already perfectly represents either albumArtist or trackArtist.
+      let album = await dbGet('SELECT id FROM albums WHERE title = ? AND artist_id = ?', [albumTitle, artistId]);
+      if (!album) {
+        // Album doesn't exist, so insert it.
+        albumId = await dbRun('INSERT INTO albums (title, artist_id) VALUES (?, ?)', [albumTitle, artistId]);
+      } else {
+        // Album exists, so grab it's ID.
+        albumId = album.id;
+      } 
     }
-
+    
     // 4. Tracks Logic
+    // ISRC as the identifier.
     let track = await dbGet('SELECT id FROM tracks WHERE file_path = ?', [filePath]);
     let trackId;
     if (!track) {
       // Track doesn't exists, so insert it.
-      trackId = await dbRun('INSERT INTO tracks (title, track_number, file_path, album_id) VALUES (?, ?, ?, ?)', [trackTitle, trackNumber, filePath, albumId]);
+      trackId = await dbRun(
+        'INSERT INTO tracks (title, track_number, file_path, isrc, album_id) VALUES (?, ?, ?, ?, ?)',
+        [trackTitle, trackNumber, filePath, isrc, albumId]
+      );
     } else {
       // Track exists, so grab it's ID.
       trackId = track.id;
     }
 
-    console.log(`Ingested: ${trackTitle} by ${artistName}`);
+    console.log(`Ingested: ${trackTitle} by ${artistName} (Barcode: ${barcode ? 'YES' : 'NO' })`);
   
   } catch (error) {
     console.error(`Failed to process ${filePath}`);
