@@ -23,37 +23,61 @@ async function processFile(filePath) {
     const trackTitle = meta.common.title || 'Unknown Track';
     const albumTitle = meta.common.album || 'Unknown Album';
     const trackNumber = meta.common.track.no || 0;
-
     // The specific identifiers
     const barcode = meta.common.barcode || null;
     const isrc = meta.common.isrc || null;
 
-    // The artist strings needed for fallback
-    const albumArtist = meta.common.albumartist || null;
-    const trackArtist = meta.common.artist || null;
+    // --- Album Owner ---
+    let customMainArtist = null;
+    if (meta.native && meta.native.vorbis) {
+      // Some systems use 'id' some use 'key' depending on the tagger.
+      const mainArtistTag = meta.native.vorbis.find(tag => 
+        (tag.id && tag.id.toLowerCase() === 'main_artist') ||
+        (tag.key && tag.key.toLowerCase() === 'main_artist')
+      );
+      if (mainArtistTag) customMainArtist = mainArtistTag.value;
+    }
+    const primaryArtistName = meta.common.albumartist || customMainArtist || meta.common.artist || 'Unknown Artist';
 
-    // We determine the primary artist name for this specific file
-    const artistName = albumArtist || trackArtist;
+    // --- Tracks PERFORMERS Array ---
+    let performers = [];
 
-    // 2. Artist Logic
-    let artist = await dbGet('SELECT id FROM artists WHERE name = ?', [artistName]);
-    let artistId;
-    if (!artist) {
-      // Artist doesn't exist, so insert them.
-      artistId = await dbRun('INSERT INTO artists (name) VALUES (?)', [artistName]);
+    // Try to grab ALL distinct 'main_artist' tags from the raw Vorbis data
+    if (meta.native && meta.native.vorbis) {
+      const distinctArtists = meta.native.vorbis
+        .filter(tag => (tag.id && tag.id.toLowerCase() === 'main_artist') || (tag.key && tag.key.toLowerCase() === 'main_artist'))
+        .map(tag => tag.value);
+
+      if (distinctArtists.length > 0) {
+        performers = distinctArtists;
+      }
+    }
+
+    // If the file doesn't have perfectly separated custom tags, fallback safely
+    if (performers.length === 0) {
+      if (meta.common.artists && meta.common.artists.length > 0) {
+        performers = meta.common.artists;
+      } else {
+        performers = [meta.common.artist || primaryArtistName];
+      }
+    }
+
+    // 2. Resolve Album owner in DB
+    let owner = await dbGet('SELECT id FROM artists WHERE name = ?', [primaryArtistName]);
+    let ownerId;
+    if (!owner) {
+      ownerId = await dbRun('INSERT INTO artists (name) VALUES (?)', [primaryArtistName]);
     } else {
-      // Artist exists, so grab their ID.
-      artistId = artist.id;
+      ownerId = owner.id;
     }
 
     // 3. Album Logic
     let albumId;
-    
     if (barcode) {
       // Barcode matching
       let album = await dbGet('SELECT id FROM albums WHERE barcode = ?', [barcode]);
       if (!album) {
-        albumId = await dbRun('INSERT INTO albums (title, barcode, artist_id) VALUES (?, ?, ?)', [albumTitle, barcode, artistId]); 
+        albumId = await dbRun('INSERT INTO albums (title, barcode, primary_artist_id) VALUES (?, ?, ?)', [albumTitle, barcode, ownerId]); 
       } else {
         albumId = album.id;
       }
@@ -61,10 +85,10 @@ async function processFile(filePath) {
       // Fallback (Title + Resolved Artist)
       // Since we've set up `artistName = albumArtist || trackArtist` above, 
       // artistId already perfectly represents either albumArtist or trackArtist.
-      let album = await dbGet('SELECT id FROM albums WHERE title = ? AND artist_id = ?', [albumTitle, artistId]);
+      let album = await dbGet('SELECT id FROM albums WHERE title = ? AND primary_artist_id = ?', [albumTitle, ownerId]);
       if (!album) {
         // Album doesn't exist, so insert it.
-        albumId = await dbRun('INSERT INTO albums (title, artist_id) VALUES (?, ?)', [albumTitle, artistId]);
+        albumId = await dbRun('INSERT INTO albums (title, primary_artist_id) VALUES (?, ?)', [albumTitle, ownerId]);
       } else {
         // Album exists, so grab it's ID.
         albumId = album.id;
@@ -86,10 +110,30 @@ async function processFile(filePath) {
       trackId = track.id;
     }
 
-    console.log(`Ingested: ${trackTitle} by ${artistName} (Barcode: ${barcode ? 'YES' : 'NO' })`);
+    // track_artists table loop (wiring up the featured artists)
+    for (let i = 0; i < performers.length; i++) {
+      const perfName = performers[i];
+
+      let perfRecord = await dbGet('SELECT id FROM artists WHERE name = ?', [perfName]);
+      let perfId;
+      if (!perfRecord) {
+        perfId = await dbRun('INSERT INTO artists (name) VALUES (?)', [perfName]);
+      } else {
+        perfId = perfRecord.id;
+      }
+
+      const role = (i === 0) ? 'primary' : 'feature';
+
+      await dbRun(
+        'INSERT OR IGNORE INTO track_artists (track_id, artist_id, role) VALUES (?, ?, ?)',
+        [trackId, perfId, role]
+      );
+    }
+
+    console.log(`Ingested: ${trackTitle} by ${primaryArtistName} (Barcode: ${barcode ? 'YES' : 'NO' })`);
   
   } catch (error) {
-    console.error(`Failed to process ${filePath}`);
+    console.error(`Failed to process ${filePath}:`, error);
   }
 }
 
