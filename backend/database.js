@@ -33,8 +33,8 @@ function initializeTables() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
       barcode TEXT,
-      artist_id INTEGER,
-      FOREIGN KEY (artist_id) REFERENCES artists (id) ON DELETE CASCADE
+      primary_artist_id INTEGER,
+      FOREIGN KEY (primary_artist_id) REFERENCES artists (id) ON DELETE CASCADE
     );
   `;
 
@@ -50,10 +50,22 @@ function initializeTables() {
     );
   `;
 
+  const createTrackArtistsTable = `
+    CREATE TABLE IF NOT EXISTS track_artists (
+      track_id INTEGER,
+      artist_id INTEGER,
+      role TEXT CHECK(role IN ('primary', 'feature')),
+      PRIMARY KEY (track_id, artist_id),
+      FOREIGN KEY (track_id) REFERENCES tracks (id) ON DELETE CASCADE,
+      FOREIGN KEY (artist_id) REFERENCES artists (id) ON DELETE CASCADE
+    );
+  `;
+
   db.serialize(() => {
     db.run(createArtistsTable);
     db.run(createAlbumsTable);
-    db.run(createTracksTable, (err) => {
+    db.run(createTracksTable);
+    db.run(createTrackArtistsTable, (err) => {
       if (err) {
         console.error('Error creating tables: ', err.message);
       } else {
