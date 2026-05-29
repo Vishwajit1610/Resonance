@@ -69,9 +69,9 @@ app.get('/api/stream/:id', async (req, res) => {
         'Accept-Ranges': 'bytes',
         'Content-Length': chunksize,
         'Content-Type': 'audio/flac',
-      };
 
-      res.writeHead(200, headers);
+      };
+      res.writeHead(206, headers);
 
       // Pipe the disk stream directly to the network socket
       fileStream.pipe(res);
@@ -83,7 +83,7 @@ app.get('/api/stream/:id', async (req, res) => {
         'Content-Length': fileSize,
         'Content-Type': 'audio/flac',
       };
-      res.writeHead(206, headers);
+      res.writeHead(200, headers);
       fs.createReadStream(filePath).pipe(res);
 
     } 
@@ -117,7 +117,7 @@ app.get('/api/artists/:id/albums', async (req, res) => {
     const artistId = req.params.id;
 
     // 2. Define the SQL query.
-    const query = 'SELECT id, title FROM albums WHERE artist_id = ?';
+    const query = 'SELECT id, title FROM albums WHERE primary_artist_id = ?';
 
     // 3. Execute the query using the dbAll wrapper and the artistId array.
     const albums = await dbAll(query, [artistId]);
@@ -137,13 +137,43 @@ app.get('/api/albums/:id/tracks', async (req, res) => {
     const albumId = req.params.id;
 
     // 2. Define the SQL query.
-    const query = 'SELECT id, title, track_number FROM tracks WHERE album_id = ? ORDER BY track_number ASC';
+    // Join the track_artists table and group the artists into a single string.
+    // We use '::' to separate names from roles and '||' to separate different artists.
+    const query = `
+      SELECT t.id, t.title, t.track_number,
+            GROUP_CONCAT(a.name || '::' || ta.role, '||') AS contributors
+      FROM tracks t
+      JOIN track_artists ta ON t.id = ta.track_id
+      JOIN artists a ON ta.artist_id = a.id
+      WHERE t.album_id = ?
+      GROUP BY t.id
+      ORDER BY t.track_number ASC
+    `;
 
     // 3. Execute the query using the dbAll wrapper and the albumId array.
-    const tracks = await dbAll(query, [albumId]);
+    const rawTracks = await dbAll(query, [albumId]);
+
+    // Parse the SQLite sting back into a clean JavaScript array for React.
+    const tracks = rawTracks.map(track => {
+      let parsedArtists = [];
+      if (track.contributors) {
+        parsedArtists = track.contributors.split('||').map(contributors => {
+          const [name, role] = contributors.split('::');
+          return {name, role};
+        });
+      }
+
+      return {
+        id: track.id,
+        title: track.title,
+        track_number: track.track_number,
+        artists: parsedArtists
+      };
+    });
 
     // 4. Send the data back to the client as JSON with a status code 200.
     res.status(200).json(tracks);
+
   }
   catch(error) {
     console.error(`Error fetching tracks for album ${req.params.id}:`, error);
