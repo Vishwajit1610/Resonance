@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import db  from './database.js';
 import fs from 'fs';
+import { parseFile } from 'music-metadata';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -178,6 +179,53 @@ app.get('/api/albums/:id/tracks', async (req, res) => {
   catch(error) {
     console.error(`Error fetching tracks for album ${req.params.id}:`, error);
     res.status(500).json({ error: "Failed to fetch tracks" });
+  }
+});
+
+// On-The-Fly Album Extractor
+app.get('/api/art/:id', async (req, res) => {
+  try {
+    const albumId = req.params.id;
+
+    // 1. The Heuristic: We only need to ONE track from the album to get the cover art.
+    // LIMIT 1 is a critical optimization so we don't end up scanning the whole directory.
+    const track = await dbGet('SELECT file_path FROM tracks WHERE album_id = ? LIMIT 1', [albumId]);
+
+    // Failure Mode 1: The album exists, but has no tracks (Orphan Database Record).
+    if (!track) {
+      return res.status(404).json({ error: "No tracks found for this album." });
+    }
+
+    const filePath = track.file_path;
+
+    // Failure Mode 2: The file was physical moved/deleted from the hard drive.
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: "Audio file missing from drive." });
+    }
+
+    // 2. The Extraction: We ask music-metadata to read the header.
+    // By default, this DOES NOT read massive audio blocks, and only reads the metadata tags, keeping RAM usage low.
+    const meta = await parseFile(filePath);
+    const picture = meta.common.picture;
+
+    // Failure Mode 3: The FLAC file is completely, but whoever ripped it (legally) forgot to embed the cover image.
+    if (!picture || picture.length === 0) {
+      // Returns a 404 here. Later on, we will program the React Frontend to catch this 404 and display a gray "Default Music Note" SVG placeholder.
+      return res.status(404).json({ error: "No embedded art found in the audio file." });
+    }
+
+    // 3. The Network Handshake: Grab the first embedded picture (usually the front cover).
+    const coverArt = picture[0];
+
+    // We explicitally tell the browser what exact binary format is coming over the wire (e.g., 'image/jpeg', 'image/png')
+    res.set('Content-Type', coverArt.format);
+
+    // We send the raw Node.js buffer directly to the Network Socket, which Express is smart enough to handle the binary stream.
+    res.send(coverArt.data);
+  }
+  catch (error){
+    console.error(`Failed to extract art for album ${req.params.id}: `, error);
+    res.status(500).json({ error: "Internal Server Error during Album Art Extraction" });
   }
 });
 
