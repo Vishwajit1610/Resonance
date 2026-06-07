@@ -1,122 +1,66 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useRef, useEffect } from 'react';
+import { BrowserRouter } from 'react-router-dom';
+import usePlayerStore from './store/usePlayerStore';
+
+// Layout Imports
+import Sidebar from './components/layout/Sidebar';
+import PlayerBar from './components/layout/PlayerBar';
+import MainViewport from './components/layout/MainViewport';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const audioRef = useRef(null);
+  const currentTrack = usePlayerStore((state) => state.currentTrack);
+  const isPlaying = usePlayerStore((state) => state.isPlaying);
+  const setIsPlaying = usePlayerStore((state) => state.setIsPlaying);
+
+  // Pull Timeline Mutators
+  const updateProgress = usePlayerStore((state) => state.updateProgress);
+  const seekCommand = usePlayerStore((state) => state.seekCommand);
+  const clearSeekCommand = usePlayerStore((state) => state.clearSeekCommand);
+
+  // 1. The Play/Pause Sync
+  useEffect(() => {
+    if (!audioRef.current) return;
+    if (currentTrack) {
+      const streamUrl = `http://localhost:3000/api/stream/${currentTrack.id}`;
+      if (audioRef.current.src !== streamUrl) {
+        audioRef.current.src = streamUrl;
+      }
+      if (isPlaying) {
+        audioRef.current.play().catch(e => console.error("Playback blocked:", e));
+      } else {
+        audioRef.current.pause();
+      }
+    }
+  }, [currentTrack, isPlaying]);
+
+  // 2. NEW: The Seek Execution
+  useEffect(() => {
+    if (seekCommand !== null && audioRef.current) {
+      audioRef.current.currentTime = seekCommand; // Physically move the C++ audio pointer
+      clearSeekCommand(); // Reset the command
+    }
+  }, [seekCommand, clearSeekCommand]);
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <BrowserRouter>
+      <div className="flex flex-col h-screen overflow-hidden">
+        <audio 
+          ref={audioRef} 
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          // NEW: Report physical time back to the UI daemon
+          onTimeUpdate={(e) => updateProgress(e.target.currentTime, e.target.duration || 0)}
+          onEnded={() => setIsPlaying(false)} // Temp halt until we build the queue
+        />
+        <div className="flex flex-1 overflow-hidden">
+          <Sidebar />
+          <MainViewport />
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+        <PlayerBar />
+      </div>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;
