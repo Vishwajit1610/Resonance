@@ -1,10 +1,10 @@
 import { Routes, Route } from 'react-router-dom';
 import Artists from '../../views/Artists';
 import AlbumTracks from '../../views/AlbumTracks';
+import Albums from '../../views/Albums';
 
 // Temporary Placeholder Pages
 const Home = () => <h1 className="text-4xl font-bold text-tx-main">Home View</h1>;
-const Albums = () => <h1 className="text-4xl font-bold text-tx-main">Albums View</h1>;
 
 export default function MainViewport() {
   return (
