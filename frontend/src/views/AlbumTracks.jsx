@@ -17,6 +17,15 @@ export default function AlbumTracks() {
       .then(res => res.json())
       .then(data => {
         const tracksWithAlbumId = data.map(track => ({ ...track, album_id: id }));
+  
+        // Build track navigation links used by the player queue. DLL underneath.
+        for (let i = 0; i < tracksWithAlbumId.length; i++) {
+          let current = tracksWithAlbumId[i];
+          // If tracks[i - 1] is undefined, fallback to null
+          current.prev = tracksWithAlbumId[i - 1] || null;
+          current.next = tracksWithAlbumId[i + 1] || null;
+        }
+
         setTracks(tracksWithAlbumId);
         setIsLoading(false);
       })

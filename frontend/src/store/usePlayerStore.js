@@ -18,6 +18,34 @@ const usePlayerStore = create((set) => ({
     isPlaying: true
   }),
 
+  playNext: () => set((state) => {
+    // If we are not playing a song, or if we are at the Tail (no next song).
+    // we do nothing, and return an empty object to tell Zustand NOT to update.
+    if (!state.currentTrack || state.currentTrack.next === null) {
+      return {};
+    }
+
+    // We know the next track exists, We command Zustand to overwrite the currentTrack memory address with the next track's memory address.
+    return {
+      currentTrack: state.currentTrack.next,
+      isPlaying: true,
+    }
+  }),
+
+  playPrev: () => set((state) => {
+    // If we are not playing a song, or if we are at the Head (no prev song).
+    // we do nothing, and return an empty object to tell Zustand NOT to update.
+    if (!state.currentTrack || state.currentTrack.prev === null) {
+      return {};
+    }
+    
+    // We know the prev track exists, We command Zustand to overwrite the currentTrack memory address with the prev track's memory address.
+    return {
+      currentTrack: state.currentTrack.prev,
+      isPlaying: true,
+    }
+  }),
+
   togglePlay: () => set((state) => ({
     // Flips the boolean based on the previous state
     isPlaying: !state.isPlaying

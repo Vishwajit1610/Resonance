@@ -17,6 +17,7 @@ function App() {
   const updateProgress = usePlayerStore((state) => state.updateProgress);
   const seekCommand = usePlayerStore((state) => state.seekCommand);
   const clearSeekCommand = usePlayerStore((state) => state.clearSeekCommand);
+  const playNext = usePlayerStore((state) => state.playNext);
 
   // 1. The Play/Pause Sync
   useEffect(() => {
@@ -51,7 +52,7 @@ function App() {
           onPause={() => setIsPlaying(false)}
           // NEW: Report physical time back to the UI daemon
           onTimeUpdate={(e) => updateProgress(e.target.currentTime, e.target.duration || 0)}
-          onEnded={() => setIsPlaying(false)} // Temp halt until we build the queue
+          onEnded={playNext} // Automatic Progression to the next track.
         />
         <div className="flex flex-1 overflow-hidden">
           <Sidebar />

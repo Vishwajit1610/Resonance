@@ -1,4 +1,5 @@
-// This is the persistent control deck glued to the bottom. It connects directly to the Zustand daemon to display the truth.
+// Persistent playback controls.
+// Reads player state and dispatches playback actions through Zustand.
 
 import usePlayerStore from '../../store/usePlayerStore';
 
@@ -14,11 +15,16 @@ export default function PlayerBar() {
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const togglePlay = usePlayerStore((state) => state.togglePlay);
+  const playPrev = usePlayerStore((state) => state.playPrev);
+  const playNext = usePlayerStore((state) => state.playNext);
   
   // Pull Timeline State
   const currentTime = usePlayerStore((state) => state.currentTime);
   const duration = usePlayerStore((state) => state.duration);
   const seekTo = usePlayerStore((state) => state.seekTo);
+
+  // Calculate the exact completion percentage
+  const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
     <div className="h-24 bg-surface border-t border-border flex items-center justify-between px-8">
@@ -53,7 +59,11 @@ export default function PlayerBar() {
       {/* Center: Controls & Interactive Timeline */}
       <div className="flex flex-col items-center justify-center w-1/3 gap-2">
         <div className="flex items-center gap-6">
-          <button className="text-tx-muted hover:text-tx-main transition">
+          <button 
+            onClick={playPrev} 
+            disabled={!currentTrack?.prev}
+            className="text-tx-muted hover:text-tx-main transition">
+            {/* Previous Icon */}
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
           </button>
           
@@ -69,7 +79,11 @@ export default function PlayerBar() {
             )}
           </button>
 
-          <button className="text-tx-muted hover:text-tx-main transition">
+          <button 
+            onClick={playNext} 
+            disabled={!currentTrack?.next}
+            className="text-tx-muted hover:text-tx-main transition">
+            {/* Next Icon */}
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
           </button>
         </div>
@@ -83,7 +97,10 @@ export default function PlayerBar() {
             max={duration || 100} 
             value={currentTime || 0}
             onChange={(e) => seekTo(Number(e.target.value))}
-            className="flex-1 h-1 bg-surface-hover rounded-full appearance-none cursor-pointer accent-primary"
+            className="flex-1 h-1 rounded-full appearance-none cursor-pointer accent-primary"
+            style={{
+              background: `linear-gradient(to right, var(--brand-primary) ${progressPercentage}%, var(--bg-surface-hover) ${progressPercentage}%)`
+            }}
           />
           <span className="w-8">{formatTime(duration)}</span>
         </div>
