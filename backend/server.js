@@ -182,6 +182,26 @@ app.get('/api/albums/:id/tracks', async (req, res) => {
   }
 });
 
+// Route for Albums, which we later fetch for Album view in Frontend
+app.get('/api/albums', async (req, res) => {
+  try {
+    const albums = await dbAll(`
+      SELECT
+        a.id,
+        a.title
+      FROM albums a
+      ORDER BY a.title ASC
+    `);
+
+    res.status(200).json(albums);
+  } catch (error) {
+    console.error('Error fetching albums:', error);
+    res.status(500).json({
+      error: 'Failed to fetch albums'
+    });
+  }
+});
+
 // On-The-Fly Album Extractor
 app.get('/api/art/:id', async (req, res) => {
   try {
