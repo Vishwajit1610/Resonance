@@ -251,6 +251,47 @@ app.get('/api/art/:id', async (req, res) => {
   }
 });
 
+// --- Dashboard endpoints ---
+// Row 1 - Fresh ingested tracks (last 20 tracks added to the database)
+app.get('/api/dashboard/recent', async (req, res) => {
+  try {
+    const query = `
+      SELECT t.id, t.title, a.id AS album_id, artists.name AS artist_name FROM tracks t
+      JOIN albums a ON t.album_id = a.id
+      LEFT JOIN artists ON a.primary_artist_id = artists.id
+      ORDER BY t.id DESC
+      LIMIT 20
+    `;
+    
+    const tracks = await dbAll(query);
+    res.status(200).json(tracks);
+  }
+  catch(error) {
+    console.error('Error fetching recent tracks: ', error);
+    res.status(500).json({ error: 'Failed to fetch recent tracks' });
+  }
+});
+
+// Row 2 - Rediscovery (20 random tracks)
+app.get('/api/dashboard/discover', async (req, res) => {
+  try {
+    const query = `
+      SELECT t.id, t.title, a.id AS album_id, artists.name AS artist_name FROM tracks t
+      JOIN albums a ON t.album_id = a.id
+      LEFT JOIN artists ON a.primary_artist_id = artists.id
+      ORDER BY RANDOM()
+      LIMIT 20
+    `;
+  
+    const tracks = await dbAll(query);
+    res.status(200).json(tracks);
+  }
+  catch(error) {
+    console.error('Error fetching discover tracks: ', error);
+    res.status(500).json({ error: 'Failed to fetch discover tracks' });
+  }
+});
+
 /* ---- ROUTES ---- */
 
 // Simple health-check endpoint to verify the server is alive

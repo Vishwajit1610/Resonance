@@ -5,11 +5,13 @@ import { create } from 'zustand';
 const storedVolume = parseFloat(localStorage.getItem('resonance_volume'));
 const initialVolume = !isNaN(storedVolume) ? storedVolume : 0.5;
 
-const usePlayerStore = create((set) => ({
+const usePlayerStore = create((set, get) => ({
   // 1. The State (The Truth)
   currentTrack: null,   // Holds the track objects such as id, title, file_path, artists
   isPlaying: false,     // The play/pause boolean
   queue: [],            // The upcoming tracks (will use Doubly LinkedList later)
+  recentTracks: [],
+  discoverTracks: [],
 
   // Timeline State
   currentTime: 0,
@@ -86,6 +88,39 @@ const usePlayerStore = create((set) => ({
     return { isMuted: newMusicState };
   }),
 
+  // Dashboard Hydration Engine
+  // Dashboard Engine 1: Deterministic Cache (Fetches strictly once per boot)
+  fetchRecentTracks: async () => {
+    // Cache Firewall: Never refetch if we already have the data in RAM
+    if (get().recentTracks.length > 0) return;
+
+    try {
+      const res = await fetch('http://localhost:3000/api/dashboard/recent');
+      if (!res.ok) throw new Error('Failed to fetch recent tracks');
+      
+      const data = await res.json();
+      set({ recentTracks: data });
+    } catch (error) {
+      console.error('Recent Tracks Engine Error:', error);
+    }
+  },
+
+  // Dashboard Engine 2: Volatile Cache (Safe on mount, bypassable via button)
+  refreshDiscoverTracks: async (force = false) => {
+    // Cache Firewall: Only block if we have data AND we aren't forcing a reshuffle
+    if (!force && get().discoverTracks.length > 0) return;
+
+    try {
+      const res = await fetch('http://localhost:3000/api/dashboard/discover');
+      if (!res.ok) throw new Error('Failed to fetch discover tracks');
+      
+      const data = await res.json();
+      set({ discoverTracks: data });
+    } catch (error) {
+      console.error('Discover Tracks Engine Error:', error);
+    }
+  },
+  
   setQueue: (newQueue) => set({
     queue: newQueue
   }),
