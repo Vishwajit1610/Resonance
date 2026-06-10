@@ -45,7 +45,13 @@ export default function Home() {
               {/* The Metadata Block */}
               <div className="flex flex-col">
                 <h3 className="text-tx-main font-bold text-sm truncate">{track.title}</h3>
-                <p className="text-xs text-tx-muted truncate">{track.artist_name || 'Unknown Artist'}</p>
+                
+                {/* Map the array back into a readable string for the card UI */}
+                <p className="text-xs text-tx-muted truncate">
+                  {track.artists?.length > 0 
+                    ? track.artists.map(a => a.name).join(', ') 
+                    : 'Unknown Artist'}
+                </p>
               </div>
             </div>
           ))}
@@ -88,8 +94,14 @@ export default function Home() {
               {/* The Metadata Block */}
               <div className="flex flex-col">
                 <h3 className="text-tx-main font-bold text-sm truncate">{track.title}</h3>
-                <p className="text-xs text-tx-muted truncate">{track.artist_name || 'Unknown Artist'}</p>
-              </div>
+                
+                {/* Map the array back into a readable string for the card UI */}
+                <p className="text-xs text-tx-muted truncate">
+                  {track.artists?.length > 0 
+                    ? track.artists.map(a => a.name).join(', ') 
+                    : 'Unknown Artist'}
+                </p>
+              </div>            
             </div>
           ))}
 

@@ -252,22 +252,43 @@ app.get('/api/art/:id', async (req, res) => {
 });
 
 // --- Dashboard endpoints ---
+// Helper function to enforce the standard Track interface
+const normalizeTrackPayload = (rawTracks) => {
+  return rawTracks.map(track => {
+    let parsedArtists = [];
+    if (track.contributors) {
+      parsedArtists = track.contributors.split('||').map(c => {
+        const [name, role] = c.split('::');
+        return { name, role };
+      });
+    }
+    return {
+      id: track.id,
+      title: track.title,
+      album_id: track.album_id,
+      artists: parsedArtists // The PlayerBar expects this array
+    };
+  });
+};
+
 // Row 1 - Fresh ingested tracks (last 20 tracks added to the database)
 app.get('/api/dashboard/recent', async (req, res) => {
   try {
     const query = `
-      SELECT t.id, t.title, a.id AS album_id, artists.name AS artist_name FROM tracks t
-      JOIN albums a ON t.album_id = a.id
-      LEFT JOIN artists ON a.primary_artist_id = artists.id
+      SELECT t.id, t.title, t.album_id, 
+             GROUP_CONCAT(a.name || '::' || ta.role, '||') AS contributors
+      FROM tracks t
+      LEFT JOIN track_artists ta ON t.id = ta.track_id
+      LEFT JOIN artists a ON ta.artist_id = a.id
+      GROUP BY t.id
       ORDER BY t.id DESC
       LIMIT 20
     `;
     
-    const tracks = await dbAll(query);
-    res.status(200).json(tracks);
-  }
-  catch(error) {
-    console.error('Error fetching recent tracks: ', error);
+    const rawTracks = await dbAll(query);
+    res.status(200).json(normalizeTrackPayload(rawTracks));
+  } catch(error) {
+    console.error('Error fetching recent:', error);
     res.status(500).json({ error: 'Failed to fetch recent tracks' });
   }
 });
@@ -276,18 +297,19 @@ app.get('/api/dashboard/recent', async (req, res) => {
 app.get('/api/dashboard/discover', async (req, res) => {
   try {
     const query = `
-      SELECT t.id, t.title, a.id AS album_id, artists.name AS artist_name FROM tracks t
-      JOIN albums a ON t.album_id = a.id
-      LEFT JOIN artists ON a.primary_artist_id = artists.id
+      SELECT t.id, t.title, t.album_id, 
+             GROUP_CONCAT(a.name || '::' || ta.role, '||') AS contributors
+      FROM tracks t
+      LEFT JOIN track_artists ta ON t.id = ta.track_id
+      LEFT JOIN artists a ON ta.artist_id = a.id
+      GROUP BY t.id
       ORDER BY RANDOM()
       LIMIT 20
     `;
-  
-    const tracks = await dbAll(query);
-    res.status(200).json(tracks);
-  }
-  catch(error) {
-    console.error('Error fetching discover tracks: ', error);
+    const rawTracks = await dbAll(query);
+    res.status(200).json(normalizeTrackPayload(rawTracks));
+  } catch(error) {
+    console.error('Error fetching discover:', error);
     res.status(500).json({ error: 'Failed to fetch discover tracks' });
   }
 });
