@@ -42,12 +42,31 @@ export default function Albums() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
         {albums.map((album) => (
-          <Link 
-            to={`/albums/${album.id}/tracks`}
+          <Link
             key={album.id}
-            className="bg-surface border border-border p-6 rounded-xl hover:bg-surface-hover transition cursor-pointer flex items-center justify-center text-center min-h-[120px]"
+            to={`/albums/${album.id}/tracks`}
+            className="group flex flex-col gap-3 w-full"
           >
-            <h3 className="font-semibold text-lg">{album.title}</h3>
+            <div className="w-full aspect-square bg-surface-hover rounded-md overflow-hidden shadow-md">
+              <img
+                src={`http://localhost:3000/api/art/${album.id}`}
+                alt={album.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            </div>
+
+            <div className="flex flex-col">
+              <h3 className="text-tx-main font-bold truncate">
+                {album.title}
+              </h3>
+
+              <p className="text-sm text-tx-muted truncate">
+                {album.artists || 'Unknown Artist'}
+              </p>
+            </div>
           </Link>
         ))}
       </div>

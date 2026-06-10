@@ -188,8 +188,10 @@ app.get('/api/albums', async (req, res) => {
     const albums = await dbAll(`
       SELECT
         a.id,
-        a.title
+        a.title,
+        artists.name AS artists
       FROM albums a
+      LEFT JOIN artists ON a.primary_artist_id = artists.id
       ORDER BY a.title ASC
     `);
 
