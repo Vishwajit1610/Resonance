@@ -13,6 +13,9 @@ function App() {
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const setIsPlaying = usePlayerStore((state) => state.setIsPlaying);
 
+  const volume = usePlayerStore((state) => state.volume);
+  const isMuted = usePlayerStore((state) => state.isMuted);
+
   // Pull Timeline Mutators
   const updateProgress = usePlayerStore((state) => state.updateProgress);
   const seekCommand = usePlayerStore((state) => state.seekCommand);
@@ -35,13 +38,22 @@ function App() {
     }
   }, [currentTrack, isPlaying]);
 
-  // 2. NEW: The Seek Execution
+  // 2. The Seek Execution
   useEffect(() => {
     if (seekCommand !== null && audioRef.current) {
       audioRef.current.currentTime = seekCommand; // Physically move the C++ audio pointer
       clearSeekCommand(); // Reset the command
     }
   }, [seekCommand, clearSeekCommand]);
+
+  // 3. The Hardware Volume Sync
+  useEffect(() => {
+    // Guard clause: Ensure the physical HTML audio tag is mounted in the DOM
+    if (audioRef.current) {
+      audioRef.current.volume = volume; // Maps float (0.0 to 1.0)
+      audioRef.current.muted = isMuted; // Maps Boolean (true/false) 
+    }
+  }, [volume, isMuted]);
 
   return (
     <BrowserRouter>
