@@ -21,6 +21,8 @@ function App() {
   const seekCommand = usePlayerStore((state) => state.seekCommand);
   const clearSeekCommand = usePlayerStore((state) => state.clearSeekCommand);
   const playNext = usePlayerStore((state) => state.playNext);
+  const playPrev = usePlayerStore((state) => state.playPrev);
+  const togglePlay = usePlayerStore((state) => state.togglePlay);
 
   // 1. The Play/Pause Sync
   useEffect(() => {
@@ -54,6 +56,27 @@ function App() {
       audioRef.current.muted = isMuted; // Maps Boolean (true/false) 
     }
   }, [volume, isMuted]);
+
+  // 4. OS-level Hardware Media Keys (MPRIS / Media Session API) 
+  useEffect(() => {
+    if ('mediaSession' in navigator && currentTrack) {
+      // Tell the OS what is playing so Hyprland/Waybar can display it
+      navigator.mediaSession.metadata = new window.MediaMetadata({
+        title : currentTrack.title,
+        artist : currentTrack.artists ? currentTrack.artists.map(a => a.name).join(', ') : 'Unknown Artist',
+        album : 'Resonance',
+        artwork: [
+          { src: `http://localhost:3000/api/art/${currentTrack.album_id}`, sizes: '512x512', type: 'image/jpeg' }
+        ]
+      });
+    
+      // Bind the physical hardware keys to Zustand Daemon
+      navigator.mediaSession.setActionHandler('play', () => setIsPlaying(true));
+      navigator.mediaSession.setActionHandler('pause', () => setIsPlaying(false));
+      navigator.mediaSession.setActionHandler('nexttrack', playNext);
+      navigator.mediaSession.setActionHandler('previoustrack', playPrev);
+    }   
+  }, [currentTrack, setIsPlaying, playNext, playPrev]);
 
   return (
     <BrowserRouter>
