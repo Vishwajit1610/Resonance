@@ -22,7 +22,10 @@ function App() {
   const clearSeekCommand = usePlayerStore((state) => state.clearSeekCommand);
   const playNext = usePlayerStore((state) => state.playNext);
   const playPrev = usePlayerStore((state) => state.playPrev);
-  const togglePlay = usePlayerStore((state) => state.togglePlay);
+
+  // Sidebar hooks
+  const isSidebarOpen = usePlayerStore((state) => state.isSidebarOpen);
+  const toggleSidebar = usePlayerStore((state) => state.toggleSidebar);
 
   // 1. The Play/Pause Sync
   useEffect(() => {
@@ -89,11 +92,30 @@ function App() {
           onTimeUpdate={(e) => updateProgress(e.target.currentTime, e.target.duration || 0)}
           onEnded={playNext} // Automatic Progression to the next track.
         />
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden relative">
           <Sidebar />
-          <MainViewport />
-        </div>
-        <PlayerBar />
+          
+          {/* The Floating Toggle Button (Only visible when Sidebar is closed) */}
+          {!isSidebarOpen && (
+            <button 
+              onClick={toggleSidebar}
+              className="absolute top-8 left-6 z-50 p-2 text-tx-muted hover:text-tx-main hover:bg-surface-hover rounded-md transition-all duration-200"
+            >
+              {/* Hamburger SVG */}
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+              </svg>
+            </button>
+          )}
+
+          {/* The Viewport Wrapper */}
+          <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${!isSidebarOpen ? 'pl-16' : 'pl-0'}`}>
+            <MainViewport />
+          </div>        
+        </div>        
+      <PlayerBar />
       </div>
     </BrowserRouter>
   );

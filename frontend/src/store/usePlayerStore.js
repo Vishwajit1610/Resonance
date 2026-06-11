@@ -6,8 +6,8 @@ const storedVolume = parseFloat(localStorage.getItem('resonance_volume'));
 const initialVolume = !isNaN(storedVolume) ? storedVolume : 0.5;
 
 const usePlayerStore = create((set, get) => ({
-  // 1. The State (The Truth)
   currentTrack: null,   // Holds the track objects such as id, title, file_path, artists
+// 1. The State (The Truth)
   isPlaying: false,     // The play/pause boolean
   queue: [],            // The upcoming tracks (will use Doubly LinkedList later)
   recentTracks: [],
@@ -21,6 +21,10 @@ const usePlayerStore = create((set, get) => ({
   // Audio State (for Volume Slider)
   volume: initialVolume,
   isMuted: false,
+
+  // Sidebar State
+  isSidebarOpen: true,
+  toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
 
 
   // 2. The Actions (The Mutators)
