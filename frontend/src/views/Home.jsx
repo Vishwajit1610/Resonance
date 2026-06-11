@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import usePlayerStore from '../store/usePlayerStore';
+import ScrollRow from '../components/ui/ScrollRow';
+import TrackCard from '../components/ui/TrackCard';
 
 export default function Home() {
   // Pulling Arrays and Mutators from the Zustand Daemon
@@ -23,40 +25,15 @@ export default function Home() {
       <section className="flex flex-col gap-4">
         <h2 className="text-2xl font-bold tracking-tight">Fresh Ingest</h2>
         
-        {/* The CSS Firewall Container: Forces horizontal scroll, blocks vertical wrap */}
-        <div className="flex flex-row flex-nowrap overflow-x-auto gap-6 pb-4 snap-x">
-          
+        <ScrollRow>
           {recentTracks.map((track) => (
-            <div 
+            <TrackCard 
               key={track.id} 
-              onClick={() => playTrack(track)} // THE AUDIO ENGINE TRIGGER
-              className="min-w-[160px] max-w-[160px] snap-start group cursor-pointer flex flex-col gap-2"
-            >
-              {/* The Immutable Square Boundary */}
-              <div className="w-full aspect-square bg-surface-hover rounded-md overflow-hidden shadow-md">
-                <img 
-                  src={`http://localhost:3000/api/art/${track.album_id}`} 
-                  alt={track.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                />
-              </div>
-
-              {/* The Metadata Block */}
-              <div className="flex flex-col">
-                <h3 className="text-tx-main font-bold text-sm truncate">{track.title}</h3>
-                
-                {/* Map the array back into a readable string for the card UI */}
-                <p className="text-xs text-tx-muted truncate">
-                  {track.artists?.length > 0 
-                    ? track.artists.map(a => a.name).join(', ') 
-                    : 'Unknown Artist'}
-                </p>
-              </div>
-            </div>
+              track={track} 
+              onClick={() => playTrack(track)} 
+            />
           ))}
-
-        </div>
+        </ScrollRow>      
       </section>
 
       {/* --- ROW 2: DISCOVER --- */}
@@ -71,41 +48,15 @@ export default function Home() {
             Reshuffle
           </button>
         </div>
-        
-        {/* The CSS Firewall Container */}
-        <div className="flex flex-row flex-nowrap overflow-x-auto gap-6 pb-4 snap-x">
-          
-          {discoverTracks.map((track) => (
-            <div 
-              key={track.id} 
-              onClick={() => playTrack(track)} // THE AUDIO ENGINE TRIGGER
-              className="min-w-[160px] max-w-[160px] snap-start group cursor-pointer flex flex-col gap-2"
-            >
-              {/* The Immutable Square Boundary */}
-              <div className="w-full aspect-square bg-surface-hover rounded-md overflow-hidden shadow-md">
-                <img 
-                  src={`http://localhost:3000/api/art/${track.album_id}`} 
-                  alt={track.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                />
-              </div>
-
-              {/* The Metadata Block */}
-              <div className="flex flex-col">
-                <h3 className="text-tx-main font-bold text-sm truncate">{track.title}</h3>
-                
-                {/* Map the array back into a readable string for the card UI */}
-                <p className="text-xs text-tx-muted truncate">
-                  {track.artists?.length > 0 
-                    ? track.artists.map(a => a.name).join(', ') 
-                    : 'Unknown Artist'}
-                </p>
-              </div>            
-            </div>
-          ))}
-
-        </div>
+        <ScrollRow>
+            {discoverTracks.map((track) => (
+              <TrackCard 
+                key={track.id} 
+                track={track} 
+                onClick={() => playTrack(track)} 
+              />
+            ))}
+          </ScrollRow>
       </section>
     </div>
   );

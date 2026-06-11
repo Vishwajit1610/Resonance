@@ -11,6 +11,7 @@ export default function Sidebar() {
   // Array block to keep the DOM clean and prevent repetative code blocks 
   const navLinks = [
     { name: 'Home', path: '/'},
+    { name: 'Search', path: '/search'},
     { name: 'Artists', path: '/artists'},
     { name: 'Albums', path: '/albums'}
   ];

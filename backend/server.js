@@ -314,6 +314,74 @@ app.get('/api/dashboard/discover', async (req, res) => {
   }
 });
 
+// --- Search Engine Endpoint ---
+app.get('/api/search', async (req, res) => {
+  // 1. Input checking & Whitespace Guard
+  const q = (req.query.q || '').trim();
+
+  if (!q) {
+    return res.status(200).json({ tracks: [], albums: [] });
+  }
+
+  try {
+    // 2. Tokenization: Split the query by spaces and remove empty strings
+    const tokens = q.split(/\s+/).filter(Boolean);
+
+    // 3. Dynamic SQL Construction for Tracks
+    const trackConditions = tokens.map(() => '(t.title LIKE ? OR a.name LIKE ?)').join(' AND ');
+    
+    // need to supply the token twice for each condition block
+    const trackParams = [];
+    tokens.forEach(token => {
+      trackParams.push(`%${token}%`, `%${token}%`);
+    });
+
+    const trackQuery = `
+      SELECT t.id, t.title, t.album_id, 
+        GROUP_CONCAT(a.name || '::' || ta.role, '||') AS contributors
+      FROM tracks t
+      LEFT JOIN track_artists ta ON t.id = ta.track_id
+      LEFT JOIN artists a ON ta.artist_id = a.id
+      WHERE ${trackConditions}
+      GROUP BY t.id
+      LIMIT 15
+    `;
+    
+    // 4. Dynamic SQL Construction for Albums
+    // Check both the Album Title and the Primary Artist Name
+    const albumConditions = tokens.map(() => '(al.title LIKE ? OR a.name LIKE ?)').join(' AND ');
+    
+    // Because we check two columns (title OR name), we must push the token twice per condition
+    const albumParams = [];
+    tokens.forEach(token => {
+      albumParams.push(`%${token}%`, `%${token}%`);
+    });
+
+    const albumQuery = `
+      SELECT al.id, al.title 
+      FROM albums al
+      LEFT JOIN artists a ON al.primary_artist_id = a.id
+      WHERE ${albumConditions}
+      GROUP BY al.id
+      LIMIT 10
+    `;
+
+    // 5. Parallel Disk I/O (Pass dynamic arrays)
+    const [rawTracks, albums] = await Promise.all([
+      dbAll(trackQuery, trackParams),
+      dbAll(albumQuery, albumParams)
+    ]);
+    
+    // 6. Normalization Pipeline 
+    const tracks = normalizeTrackPayload(rawTracks);
+
+    res.status(200).json({ tracks, albums });
+  }  catch (error) {
+    console.error('Search Engine Error: ', error);
+    res.status(500).json({ error: 'Search Pipeline Failed' });
+  }
+});
+
 /* ---- ROUTES ---- */
 
 // Simple health-check endpoint to verify the server is alive
