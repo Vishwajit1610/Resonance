@@ -1,35 +1,44 @@
 @import "tailwindcss";
 
-/* 1. THE TAILWIND 4 THEME MAPPER */
 @theme {
-  --color-background: var(--bg-base);
-  --color-surface: var(--bg-surface);
+  --color-background:    var(--bg-base);
+  --color-surface:       var(--bg-surface);
   --color-surface-hover: var(--bg-surface-hover);
-  
-  --color-primary: var(--brand-primary);
-  
-  --color-border: var(--border-subtle);
-  --color-tx-main: var(--text-main);
-  --color-tx-muted: var(--text-muted);
+  --color-primary:       var(--brand-primary);
+  --color-primary-muted: var(--brand-primary-muted);
+  --color-border:        var(--border-subtle);
+  --color-tx-main:       var(--text-main);
+  --color-tx-muted:      var(--text-muted);
 }
 
-/* 2. THE SYSTEM VARIABLES (The Truth) */
 @layer base {
   :root {
-    /* Default Dark Theme (Resonance Base) */
-    --bg-base: #09090b;       /* Pure deep background */
-    --bg-surface: #18181b;    /* Slightly lighter for Sidebar/Player */
-    --bg-surface-hover: #27272a; /* For hovering over track rows */
-    
-    --border-subtle: #27272a;
-    --brand-primary: #10b981; /* The Accent (e.g., Emerald Green playing state) */
-    
-    --text-main: #f4f4f5;     /* Pure white/gray for active text */
-    --text-muted: #a1a1aa;    /* Dimmed gray for secondary text/timestamps */
+    /* Dark (default) */
+    --bg-base:              #09090b;
+    --bg-surface:           #18181b;
+    --bg-surface-hover:     #27272a;
+    --border-subtle:        #27272a;
+    --brand-primary:        #10b981;
+    --brand-primary-muted:  #10b98122;
+    --text-main:            #f4f4f5;
+    --text-muted:           #a1a1aa;
+  }
+
+  /* Light — toggled by adding .light to <html> */
+  html.light {
+    --bg-base:              #fafafa;
+    --bg-surface:           #ffffff;
+    --bg-surface-hover:     #f4f4f5;
+    --border-subtle:        #e4e4e7;
+    --brand-primary:        #059669;
+    --brand-primary-muted:  #05966922;
+    --text-main:            #18181b;
+    --text-muted:           #71717a;
   }
 
   body {
     background-color: var(--bg-base);
     color: var(--text-main);
+    -webkit-font-smoothing: antialiased;
   }
 }

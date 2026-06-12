@@ -54,7 +54,7 @@ export default function Search() {
       <div className="w-full flex justify-center mt-12 mb-16">
         <input
           type="text"
-          placeholder="Search tracks and albums..."
+          placeholder="Search tracks, albums, artists..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           autoFocus
@@ -120,11 +120,10 @@ export default function Search() {
 
           {/* Null State: No results found */}
           {results.tracks.length === 0 && results.albums.length === 0 && (
-             <div className="w-full text-center text-tx-muted mt-12">
-               No results found for "{debouncedQuery}"
-             </div>
+             <p className="text-tx-muted text-sm">
+                Nothing matched <span className="text-tx-main font-medium">{debouncedQuery}</span>
+              </p>          
           )}
-
         </div>
       )}
     </div>

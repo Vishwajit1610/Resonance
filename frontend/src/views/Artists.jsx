@@ -25,9 +25,10 @@ export default function Artists() {
   if (error) {
     return (
       <div className="p-8">
-        {/* We keep literal red here as it's an absolute error state, not a theme color */}
-        <h1 className="text-3xl text-red-500 font-bold mb-4">System Fault</h1>
-        <p className="text-tx-muted">{error}</p>
+        <div className="bg-surface border border-border rounded-lg p-6 max-w-md">
+          <p className="text-sm font-semibold text-tx-main mb-1">Failed to load</p>
+          <p className="text-sm text-tx-muted">{error}</p>
+        </div>
       </div>
     );
   }

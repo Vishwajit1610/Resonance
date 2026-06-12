@@ -4,7 +4,7 @@ export default function AlbumCard({ album, onClick }) {
       onClick={onClick}
       className="min-w-[160px] max-w-[160px] snap-start group cursor-pointer flex flex-col gap-2"
     >
-      <div className="w-full aspect-square bg-surface-hover rounded-md overflow-hidden shadow-md">
+      <div className="w-full aspect-square bg-surface-hover rounded-lg overflow-hidden border border-border/50 flex items-center justify-center">
         <img 
           src={`http://localhost:3000/api/art/${album.id}`} 
           alt={album.title}
@@ -15,9 +15,7 @@ export default function AlbumCard({ album, onClick }) {
       </div>
       <div className="flex flex-col">
         <h3 className="text-tx-main font-bold text-sm truncate">{album.title}</h3>
-        <p className="text-xs text-tx-muted truncate">
-          Album
-        </p>
+        <p className="text-xs text-tx-muted truncate">{album.artists || 'Album'}</p>
       </div>
     </div>
   );

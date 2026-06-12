@@ -26,8 +26,9 @@ export default function Albums() {
   if (error) {
     return (
       <div className="p-8">
-        <h1 className="text-3xl text-red-500 font-bold mb-4">System Fault</h1>
-        <p className="text-tx-muted">{error}</p>
+        <div className="bg-surface border border-border rounded-lg p-6 max-w-md">
+          <p className="text-sm font-semibold text-tx-main mb-1">Failed to load</p> <p className="text-sm text-tx-muted">{error}</p>
+        </div>
       </div>
     );
   }  

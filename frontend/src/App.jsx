@@ -1,6 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import usePlayerStore from './store/usePlayerStore';
+import useTheme from './hooks/useTheme';
 
 // Layout Imports
 import Sidebar from './components/layout/Sidebar';
@@ -8,6 +9,8 @@ import PlayerBar from './components/layout/PlayerBar';
 import MainViewport from './components/layout/MainViewport';
 
 function App() {
+  useTheme(); 
+
   const audioRef = useRef(null);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const isPlaying = usePlayerStore((state) => state.isPlaying);

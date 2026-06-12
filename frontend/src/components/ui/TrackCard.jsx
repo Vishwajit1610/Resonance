@@ -4,7 +4,7 @@ export default function TrackCard({ track, onClick }) {
       onClick={onClick}
       className="min-w-[160px] max-w-[160px] snap-start group cursor-pointer flex flex-col gap-2"
     >
-      <div className="w-full aspect-square bg-surface-hover rounded-md overflow-hidden shadow-md">
+      <div className="w-full aspect-square bg-surface-hover rounded-lg overflow-hidden border border-border/50 flex items-center justify-center">
         <img 
           src={`http://localhost:3000/api/art/${track.album_id}`} 
           alt={track.title}

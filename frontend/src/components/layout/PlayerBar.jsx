@@ -68,27 +68,39 @@ export default function PlayerBar() {
           <button 
             onClick={playPrev} 
             disabled={!currentTrack?.prev}
-            className="text-tx-muted hover:text-tx-main transition">
+            className="text-tx-muted hover:text-tx-main transition-colors duration-150 disabled:opacity-30 disabled:cursor-not-allowed">
             {/* Previous Icon */}
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
           </button>
           
-          <button 
+          <button
             onClick={togglePlay}
             disabled={!currentTrack}
-            className="bg-tx-main text-background rounded-full p-2 hover:scale-105 disabled:opacity-50 transition"
+            className="w-10 h-10 flex items-center justify-center bg-tx-main text-background rounded-full hover:scale-105 disabled:opacity-35 disabled:cursor-not-allowed transition-transform duration-150"
           >
             {isPlaying ? (
-              <svg className="w-8 h-8 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+              <svg
+                className="w-5 h-5"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+              </svg>
             ) : (
-              <svg className="w-8 h-8 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              <svg
+                className="w-5 h-5"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M8 5v14l11-7z" />
+              </svg>
             )}
           </button>
 
           <button 
             onClick={playNext} 
             disabled={!currentTrack?.next}
-            className="text-tx-muted hover:text-tx-main transition">
+            className="text-tx-muted hover:text-tx-main transition-colors duration-150 disabled:opacity-30 disabled:cursor-not-allowed">
             {/* Next Icon */}
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
           </button>
