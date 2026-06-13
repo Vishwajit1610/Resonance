@@ -5,3 +5,4 @@ node_modules/
 .DS_Store
 note.md
 
+docs/ARCHITECTURE_EXTENDED.md
