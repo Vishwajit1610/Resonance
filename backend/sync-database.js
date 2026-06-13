@@ -2,6 +2,7 @@ import 'dotenv/config';
 import db from './database.js';
 import { parseFile } from 'music-metadata';
 import findFlacFiles from './scanner.js';
+import fs from 'fs';
 
 // --- Promise Wrapper for SQLite ---
 const dbGet = (query, params) => new Promise ((resolve, reject) => {
@@ -13,6 +14,48 @@ const dbRun = (query, params) => new Promise ((resolve, reject) => {
     err ? reject(err) : resolve(this.lastID); // this.lastId is the newly inserted row.
   });
 });
+
+// --- Artist corrupted metadata extraction logic ---
+// Read the JSON file synchronously during script boot and construct the O(1) Hash Set
+const exceptionsPath = new URL('./artist-exceptions.json', import.meta.url);
+const exceptionsData = JSON.parse(fs.readFileSync(exceptionsPath, 'utf8'));
+const KNOWN_COMMA_ARTISTS = new Set(exceptionsData.commaArtists);
+
+// Sanitizer Engine
+function extractCleanArtists(common) {
+  let rawArtists = [];
+
+  if (Array.isArray(common.artists) && common.artists.length > 0) {
+    rawArtists = common.artists;
+  } else if (common.artist) {
+    rawArtists = [common.artist];
+  } else {
+    return ['Unknown Artist'];
+  }
+
+  const finalArtists = new Set();
+
+  rawArtists.forEach(artistStr => {
+    const trimmedArtist = artistStr.trim();
+  
+    if (KNOWN_COMMA_ARTISTS.has(trimmedArtist)) {
+      finalArtists.add(trimmedArtist);
+      return;
+    }
+    
+    const parts = trimmedArtist.split(/\s*\/\s*|\s*,\s*/);
+
+    parts.forEach(part => {
+      const cleaned = part.trim();
+      
+      if (cleaned) {
+        finalArtists.add(cleaned);
+      }
+    });
+  });
+  
+  return Array.from(finalArtists);
+}
 
 async function processFile(filePath) {
   try {
@@ -37,9 +80,16 @@ async function processFile(filePath) {
       );
       if (mainArtistTag) customMainArtist = mainArtistTag.value;
     }
-    const primaryArtistName = meta.common.albumartist || customMainArtist || meta.common.artist || 'Unknown Artist';
+   // 1. Grab the raw, potentially dirty string
+    const rawPrimary = meta.common.albumartist || customMainArtist || meta.common.artist || 'Unknown Artist';
 
-    // --- Tracks PERFORMERS Array ---
+    // 2. THE FIREWALL: Force the raw string through the sanitizer
+    // We mock the 'common' object structure to reuse your existing function
+    const cleanPrimaryArray = extractCleanArtists({ artist: rawPrimary });
+    
+    // 3. Extract the definitive owner (the first name in the split array)
+    const primaryArtistName = cleanPrimaryArray[0] || 'Unknown Artist';    // --- Tracks PERFORMERS Array ---
+
     let performers = [];
 
     // Try to grab ALL distinct 'main_artist' tags from the raw Vorbis data
@@ -54,11 +104,13 @@ async function processFile(filePath) {
     }
 
     // If the file doesn't have perfectly separated custom tags, fallback safely
+    // PASS IT THROUGH THE SANITIZER ENGINE:
     if (performers.length === 0) {
-      if (meta.common.artists && meta.common.artists.length > 0) {
-        performers = meta.common.artists;
-      } else {
-        performers = [meta.common.artist || primaryArtistName];
+      performers = extractCleanArtists(meta.common);
+      
+      // Edge-case safeguard: If the sanitizer found nothing, but we know the album owner
+      if (performers.length === 1 && performers[0] === 'Unknown Artist' && primaryArtistName !== 'Unknown Artist') {
+        performers = [primaryArtistName];
       }
     }
 
