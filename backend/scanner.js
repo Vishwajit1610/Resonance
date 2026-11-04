@@ -20,7 +20,7 @@ async function findFlacFiles(dirPath) {
       const fullPath = path.join(dirPath, entry.name);
 
       // 3. BASE CASE: if it's a file AND ends with .flac, add it to the array.
-      if (entry.isFile() && entry.name.endsWith('.flac')) {
+      if (entry.isFile() && entry.name.toLowerCase().endsWith('.flac')) {
         flacFiles.push(fullPath);
       } 
       // 4. RECURSIVE STEP: If it's a directory, dive into it.
